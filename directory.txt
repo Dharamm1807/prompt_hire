@@ -1,6 +1,8 @@
 THIS FILE CONTAINES DIRECTORY INFORMATION --
 
 1)client - react frontend
+intstructions to start - npm run dev
+
 
 2)auth - auth server
 instructions to start - uvicorn main:app --reload(in auth directory)

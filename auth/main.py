@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,Query,Path,Body
+from pydantic import BaseModel
+
 
 app = FastAPI()
 
