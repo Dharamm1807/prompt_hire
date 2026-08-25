@@ -1,0 +1,33 @@
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Node dependencies and generated output
+node_modules/
+dist/
+dist-ssr/
+coverage/
+
+# Logs and local caches
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+
+# Python leftovers from the former auth service
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local editor and operating-system files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+

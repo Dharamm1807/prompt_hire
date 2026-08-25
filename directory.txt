@@ -1,8 +1,37 @@
-THIS FILE CONTAINES DIRECTORY INFORMATION --
+# PROMPT_HIRE SETUP
 
-1)client - react frontend
-intstructions to start - npm run dev
+## Prerequisites
+
+- Install Node.js and npm.
+
+## Middleware
+
+```powershell
+cd C:\Users\Dharam\Desktop\prompt_hire\middleware
+npm install
+```
+
+Create `middleware\.env`:
 
 
-2)auth - auth server
-instructions to start - uvicorn main:app --reload(in auth directory)
+Start the API:
+
+```powershell
+npm run dev
+```
+
+API URL: `http://localhost:5000`
+
+## Client
+
+Open a second terminal:
+
+```powershell
+cd C:\Users\Dharam\Desktop\prompt_hire\client
+npm install
+npm run dev
+```
+
+Open the local URL printed by Vite. Keep both terminals running.
+
+See `API.md` for endpoints and test commands. Logout is not active yet.
