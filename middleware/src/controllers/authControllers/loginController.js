@@ -9,9 +9,8 @@ The login function is exported as the default export of this module.
 
 
 import argon2 from "argon2";
-import pool from "../config/auth_db.js";
-import { createToken } from "../tokenManager/createToken.js";
-
+import pool from "../../config/auth_db.js";
+import { createToken } from "../../tokenManager/createToken.js";
 
 export const login = async (req, res) => {
     console.log("Login endpoint hit ");
