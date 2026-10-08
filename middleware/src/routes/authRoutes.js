@@ -2,8 +2,8 @@
 BUM
 */
 
-import {login} from "../controllers/loginController.js";
-import {signup} from "../controllers/signupController.js";
+import { signup } from "../controllers/authControllers/signupController.js";
+import { login } from "../controllers/authControllers/loginController.js";
 import express from "express";
 
 const router = express.Router();

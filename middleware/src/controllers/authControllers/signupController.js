@@ -4,8 +4,8 @@ I THINK TOKEN MANAGEMENT IS QUITE BUGGY AND I HAVENT TESTED IT RIGHT NOW BUT NOR
 */
 
 import argon2 from "argon2";
-import pool from "../config/auth_db.js";
-import { createToken } from "../tokenManager/createToken.js";
+import pool from "../../config/auth_db.js";
+import { createToken } from "../../tokenManager/createToken.js";
 
 export const signup = async (req, res) => {
     console.log("Signup endpoint hit....")
