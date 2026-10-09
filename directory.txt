@@ -1,6 +1,6 @@
 # PROMPT_HIRE - Full-Stack Application
 
-**Version 1.1.0** - Authentication and History API (current working version)
+**Version 1.2.0** - Authentication, History, and Messaging API (current working version)
 
 ## Project Structure
 
@@ -18,7 +18,7 @@ prompt_hire/
     ├── UPDATES.md
     ├── package.json
     └── src/
-        ├── server.js               # Mounts /api/auth and /api/history
+        ├── server.js               # Mounts /api/auth, /api/history, and /api/message
         ├── config/
         │   ├── auth_db.js          # PostgreSQL connection pool
         │   ├── env.js              # dotenv loader
@@ -32,15 +32,19 @@ prompt_hire/
         │   ├── documentControllers/
         │   │   ├── readDoc.js      # Extracts PDF text
         │   │   └── uploadDoc.js    # Uploads files to Supabase
-        │   └── historyControllers/
-        │       ├── getHistory.js
-        │       └── newHistory.js
+        │   ├── historyControllers/
+        │   │   ├── getHistory.js
+        │   │   └── newHistory.js
+        │   └── messageControllers/
+        │       ├── addMessage.js    # Saves a new message in MongoDB
+        │       └── getMessages.js   # Returns messages for a history
         ├── models/
         │   ├── historyModels.js
         │   └── messageModels.js
         ├── routes/
         │   ├── authRoutes.js
-        │   └── historyRoutes.js
+        │   ├── historyRoutes.js
+        │   └── messageRoutes.js
         └── tokenManager/
             ├── checkToken.js
             ├── createToken.js
@@ -80,12 +84,18 @@ Vite prints the local client URL, typically `http://localhost:5173`. The API bas
 - `POST /api/auth/login` - Authenticate and receive a JWT.
 - `POST /api/history/new` - Create a user history, optionally attaching a PDF.
 - `GET /api/history/get` - Fetch the authenticated user's history.
+- `POST /api/message/send` - Save a user or assistant message to a history thread.
+- `POST /api/message/get` - Fetch saved messages for the authenticated user's history.
 
-See `middleware/API.md` for request formats and Thunder Client testing steps. History IDs currently use a constant value and are not unique.
+See `middleware/API.md` for request formats and Thunder Client testing steps. The messaging endpoints require a valid JWT and operate against the MongoDB `message` collection keyed by `history_id`.
 
 ## Version History
 
-### v1.1.0 - Current Working Version
+### v1.2.0 - Current Working Version
+
+Adds message persistence and retrieval for history conversations, including MongoDB message storage, message routes, controller logic, and updated API documentation for authenticated chat interactions.
+
+### v1.1.0
 
 Adds history retrieval and creation, MongoDB persistence, optional Supabase PDF storage and text extraction, plus the associated middleware dependencies and documentation. This version describes uncommitted changes after commit `797c4e5`.
 

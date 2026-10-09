@@ -59,7 +59,7 @@ export const newHistory = async (req, res) => {
         // Create history document
         const newHistory = new history({
             user_id: userId,
-            history_id: 1,
+            history_id: new Date().getTime().toString(),
 
             pdf: {
                 name: document ? document.originalname : null,

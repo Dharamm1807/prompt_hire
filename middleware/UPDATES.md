@@ -1,8 +1,28 @@
 # Project Updates
 
-## v1.1.0 - Current Working Version
+## v1.2.0 - Current Working Version
 
-This version documents the uncommitted changes in the worktree after commit `797c4e5` (`Merge pull request #4 from Dharamm1807/client`). It is a documentation version, not a Git tag or release.
+This version documents the messaging feature added to the middleware. It adds chat-style message persistence and retrieval for each history thread and updates the API documentation to match the new conversation flow.
+
+### Changes in this version
+
+- Added `POST /api/message/send` to save a message for the authenticated user in the MongoDB `message` collection.
+- Added `POST /api/message/get` to fetch messages for a specific `history_id` and authenticated user.
+- Added message controller logic for JWT validation, user lookup, and message persistence.
+- Added the `messageRoutes.js` router and mounted it under `/api/message` in the main server.
+- Kept the MongoDB `message` schema indexed by `history_id` for efficient retrieval by thread.
+- Updated the API and directory documentation to cover the new messaging endpoints and route structure.
+
+### Known limitations in v1.2.0
+
+- Message routes rely on a valid JWT in the `Authorization` header and do not yet implement role-based message restrictions.
+- `history_id` is still effectively treated as a thread identifier passed by the client rather than generated as a unique UUID.
+- The `message_id` field exists in the schema but is not set by the current `addMessage` flow.
+- The npm `test` script is still a placeholder; automated tests are not configured.
+
+## v1.1.0
+
+This version documented the uncommitted changes in the worktree after commit `797c4e5` (`Merge pull request #4 from Dharamm1807/client`). It is a documentation version, not a Git tag or release.
 
 ### Changes since the previous commit
 
