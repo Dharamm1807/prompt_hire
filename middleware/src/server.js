@@ -8,6 +8,7 @@ import cors from "cors";
 
 import historyRoutes from "./routes/historyRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import messageRoutes from "./routes/messageRoutes.js";
 
 import { connectToDatabase } from "./config/auth_db.js";
 import { connectToMongoDB } from "./config/mongo_db.js";
@@ -24,6 +25,7 @@ connectToDatabase();
 
 app.use("/api/auth", authRoutes);
 app.use("/api/history", historyRoutes);
+app.use("/api/message", messageRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
