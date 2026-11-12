@@ -60,7 +60,7 @@ export const login = async (req, res) => {
             [token, email]
         );
         user.token = token; // Add the token to the user object before sending it back to the client
-        res.status(200).json({ message: "Login successful.", user, token });
+        res.status(200).json({ message: "Login successful.", user: { username: user.username, email: user.email }, token });
     } catch (error) {
         console.error("Error occurred while logging in:", error);
         res.status(500).json({ message: "Internal server error." });
