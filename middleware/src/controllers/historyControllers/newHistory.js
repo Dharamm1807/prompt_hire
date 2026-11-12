@@ -8,6 +8,8 @@ import mongoose from "mongoose";
 import { getIdFromToken } from "../../tokenManager/getIdfromToken.js";
 import { uploadDoc } from "../documentControllers/uploadDoc.js";
 import { readDoc } from "../documentControllers/readDoc.js";
+import initialResponse from "../aiControllers/initialResponse.js";
+import message from "../../models/messageModels.js";
 
 export const newHistory = async (req, res) => {
     try {
@@ -54,6 +56,7 @@ export const newHistory = async (req, res) => {
 
         if (document) {
             documentText = await readDoc(document);
+
         }
 
         // Create history document
@@ -78,8 +81,28 @@ export const newHistory = async (req, res) => {
 
         console.log("New history saved:", savedHistory);
 
+        let content = "";
+        if(documentText) {
+            // Generate initial questions using LLM
+            const questions = await initialResponse(documentText);
+            content = JSON.stringify(questions);
+
+            //save questions to message collection
+            const newMessage = new message({
+                message_id: new Date().getTime().toString(),
+                content: JSON.stringify(questions),
+                content_type: "json",
+                history_id: savedHistory.history_id,
+                role: "bot",
+                created_at: new Date()
+            });
+
+            const savedMessage = await newMessage.save();
+        }
+
         res.status(201).json({
             message: "New history created successfully.",
+            newMessage : content,
             history: savedHistory
         });
 

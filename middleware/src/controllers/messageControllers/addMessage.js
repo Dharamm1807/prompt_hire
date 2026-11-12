@@ -7,6 +7,7 @@ TOKEN IN THE REQUEST HEADER WILL BE USED TO AUTHENTICATE THE USER AND GET THE US
 
 import {getIdFromToken} from "../../tokenManager/getIdfromToken.js";
 import message from "../../models/messageModels.js";
+import generateResponse from "../aiControllers/generateResponse.js";
 
 export const addMessage = async (req, res) => {
     try {
@@ -39,10 +40,13 @@ export const addMessage = async (req, res) => {
         // Save the new message to the database
         const savedMessage = await newMessage.save();
 
-        //bot response generate
+        // Generate bot response
+        const botResponseContent = await generateResponse(content);
+
         const botResponse = new message({
             message_id: (new Date().getTime() + 1).toString(),  
-            content: "This is a bot response.", // Placeholder for bot response
+            content: botResponseContent, // Use the generated bot response
+
             content_type: "text",
             history_id: history_id,
             role : "bot",
@@ -52,7 +56,7 @@ export const addMessage = async (req, res) => {
         //bot response save
         const savedBotResponse = await botResponse.save();
 
-        res.status(201).json({ message: "Message added successfully.", data: savedMessage });
+        res.status(201).json({ message: "Message added successfully.", message: savedMessage, botResponse: savedBotResponse });
     }
     catch (error) {
         console.error("Error occurred while adding message:", error);

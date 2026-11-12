@@ -1,43 +1,58 @@
 # PROMPT_HIRE - Full-Stack Application
 
-**Version 1.2.0** - Authentication, History, and Messaging API (current working version)
+**Version 1.3.0** - Authentication, History, Messaging, and AI Interview Assistance
 
 ## Project Structure
 
-```
+```text
 prompt_hire/
+├── .gitignore
 ├── directory.txt
-├── client/                         # React + Vite frontend
+├── client/                              # React + Vite frontend
+│   ├── .gitignore
 │   ├── index.html
 │   ├── package.json
+│   ├── package-lock.json
+│   ├── vite.config.js
 │   └── src/
+│       ├── dashboard.jsx
+│       ├── form.jsx
+│       ├── home.jsx
+│       ├── index.css
+│       ├── login.jsx
 │       ├── main.jsx
-│       └── form.jsx
-└── middleware/                     # Express API
+│       ├── navbar.jsx
+│       └── userprofile.jsx
+└── middleware/                          # Express API
     ├── API.md
     ├── UPDATES.md
     ├── package.json
+    ├── package-lock.json
     └── src/
-        ├── server.js               # Mounts /api/auth, /api/history, and /api/message
+        ├── server.js                    # Mounts /api/auth, /api/history, /api/message
         ├── config/
-        │   ├── auth_db.js          # PostgreSQL connection pool
-        │   ├── env.js              # dotenv loader
-        │   ├── mongo_db.js         # Mongoose connection
-        │   └── supabase.js         # Supabase Storage client
+        │   ├── auth_db.js               # PostgreSQL connection pool
+        │   ├── env.js                   # dotenv loader
+        │   ├── groq.js                  # Groq SDK client
+        │   ├── mongo_db.js              # Mongoose connection
+        │   └── supabase.js              # Supabase Storage client
         ├── controllers/
+        │   ├── aiControllers/
+        │   │   ├── generateResponse.js  # Generates a reply to a chat message
+        │   │   └── initialResponse.js   # Generates interview questions from PDF text
         │   ├── authControllers/
         │   │   ├── loginController.js
         │   │   ├── logoutController.js  # Placeholder; not routed
         │   │   └── signupController.js
         │   ├── documentControllers/
-        │   │   ├── readDoc.js      # Extracts PDF text
-        │   │   └── uploadDoc.js    # Uploads files to Supabase
+        │   │   ├── readDoc.js           # Extracts PDF text
+        │   │   └── uploadDoc.js         # Uploads files to Supabase
         │   ├── historyControllers/
         │   │   ├── getHistory.js
-        │   │   └── newHistory.js
+        │   │   └── newHistory.js        # Creates history and initial AI questions
         │   └── messageControllers/
-        │       ├── addMessage.js    # Saves a new message in MongoDB
-        │       └── getMessages.js   # Returns messages for a history
+        │       ├── addMessage.js        # Saves user message and generated bot reply
+        │       └── getMessages.js       # Returns messages for a history
         ├── models/
         │   ├── historyModels.js
         │   └── messageModels.js
@@ -57,6 +72,7 @@ prompt_hire/
 - PostgreSQL with the `Users` table
 - MongoDB
 - Supabase project with a Storage bucket named `documents` for PDF uploads
+- Groq API key for AI question and message generation
 
 Install and start the middleware:
 
@@ -66,7 +82,7 @@ npm install
 npm run dev
 ```
 
-Configure `middleware/.env` with `DATABASE_URL`, `JWT_SECRET`, and `MONGODB_URI`. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to enable document upload. `PORT` is optional and defaults to `5000`. Keep service credentials private and out of source control.
+Configure `middleware/.env` with `DATABASE_URL`, `JWT_SECRET`, `MONGODB_URI`, and `GROQ_API_KEY`. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to enable document upload. `PORT` is optional and defaults to `5000`. Keep service credentials private and out of source control.
 
 Install and start the client in a second terminal:
 
@@ -82,22 +98,26 @@ Vite prints the local client URL, typically `http://localhost:5173`. The API bas
 
 - `POST /api/auth/signup` - Create an account.
 - `POST /api/auth/login` - Authenticate and receive a JWT.
-- `POST /api/history/new` - Create a user history, optionally attaching a PDF.
+- `POST /api/history/new` - Create a user history, optionally attach a PDF, and generate initial interview questions when PDF text is available.
 - `GET /api/history/get` - Fetch the authenticated user's history.
-- `POST /api/message/send` - Save a user or assistant message to a history thread.
-- `POST /api/message/get` - Fetch saved messages for the authenticated user's history.
+- `POST /api/message/send` - Save a message and generate/save an AI reply.
+- `POST /api/message/get` - Fetch saved messages for a history thread.
 
-See `middleware/API.md` for request formats and Thunder Client testing steps. The messaging endpoints require a valid JWT and operate against the MongoDB `message` collection keyed by `history_id`.
+See `middleware/API.md` for request formats, AI behavior, responses, and Thunder Client testing steps.
 
 ## Version History
 
-### v1.2.0 - Current Working Version
+### v1.3.0 - Current Working Version
 
-Adds message persistence and retrieval for history conversations, including MongoDB message storage, message routes, controller logic, and updated API documentation for authenticated chat interactions.
+Adds Groq-powered interview questions from uploaded PDF text and AI-generated replies to submitted messages. The AI integration uses `GROQ_API_KEY` and the `groq-sdk` package.
+
+### v1.2.0
+
+Adds message persistence and retrieval for history conversations, including MongoDB message storage, message routes, and controller logic.
 
 ### v1.1.0
 
-Adds history retrieval and creation, MongoDB persistence, optional Supabase PDF storage and text extraction, plus the associated middleware dependencies and documentation. This version describes uncommitted changes after commit `797c4e5`.
+Adds history retrieval and creation, MongoDB persistence, optional Supabase PDF storage and text extraction, plus the associated middleware dependencies and documentation.
 
 ### Previous Changes: v1.0.0
 

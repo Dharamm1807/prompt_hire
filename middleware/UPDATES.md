@@ -1,23 +1,35 @@
 # Project Updates
 
-## v1.2.0 - Current Working Version
+## v1.3.0 - Current Working Version
 
-This version documents the messaging feature added to the middleware. It adds chat-style message persistence and retrieval for each history thread and updates the API documentation to match the new conversation flow.
+This version adds Groq-powered interview assistance to the existing history and messaging APIs. The middleware uses the `groq-sdk` package and requires `GROQ_API_KEY` for AI features.
 
 ### Changes in this version
 
-- Added `POST /api/message/send` to save a message for the authenticated user in the MongoDB `message` collection.
-- Added `POST /api/message/get` to fetch messages for a specific `history_id` and authenticated user.
-- Added message controller logic for JWT validation, user lookup, and message persistence.
-- Added the `messageRoutes.js` router and mounted it under `/api/message` in the main server.
-- Kept the MongoDB `message` schema indexed by `history_id` for efficient retrieval by thread.
-- Updated the API and directory documentation to cover the new messaging endpoints and route structure.
+- Added the Groq SDK client and AI controllers for generating chat replies and resume-based interview questions.
+- When a PDF is attached to `POST /api/history/new`, its extracted text is sent to Groq to generate exactly 10 interview questions.
+- Saved the generated questions as a bot message with `content_type: "json"` and included their JSON-serialized array in the response's `newMessage` field.
+- Updated `POST /api/message/send` to generate and save a bot reply after saving the submitted message.
+- Updated the API and directory documentation to cover the AI integration and current request/response behavior.
 
-### Known limitations in v1.2.0
+### Known limitations in v1.3.0
 
-- Message routes rely on a valid JWT in the `Authorization` header and do not yet implement role-based message restrictions.
-- `history_id` is still effectively treated as a thread identifier passed by the client rather than generated as a unique UUID.
-- The `message_id` field exists in the schema but is not set by the current `addMessage` flow.
+- AI operations require a working Groq API key and network access. A generation failure returns an error even though a history or user message may already have been saved.
+- History and message IDs are generated from timestamps rather than guaranteed-unique IDs.
+- Message reads and writes filter by `history_id`; they do not verify that the history belongs to the authenticated user. Message documents also do not store a user ID.
+- The send response's `message` field contains the saved user message document (not a success string); the generated bot document is returned as `botResponse`.
+- The npm `test` script is still a placeholder; automated tests are not configured.
+
+## v1.2.0
+
+This version added chat-style message persistence and retrieval for history threads.
+
+### Changes in v1.2.0
+
+- Added `POST /api/message/send` to save a message in MongoDB.
+- Added `POST /api/message/get` to fetch messages for a `history_id`.
+- Added the `messageRoutes.js` router and mounted it under `/api/message`.
+- Added message controller logic and a MongoDB message schema indexed by `history_id`.
 - The npm `test` script is still a placeholder; automated tests are not configured.
 
 ## v1.1.0

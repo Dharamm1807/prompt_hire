@@ -1,14 +1,18 @@
 # Middleware API
 
-**Version 1.2.0** - Authentication, History, and Messaging API
+**Version 1.3.0** - Authentication, History, Messaging, and AI Interview Assistance API
 
-The middleware is an Express server. By default it runs on port `5000`. Authentication routes use `/api/auth`, history routes use `/api/history`, and messaging routes use `/api/message`.
+The middleware is an Express server. By default it runs on port `5000`. Authentication routes use `/api/auth`, history routes use `/api/history`, and messaging routes use `/api/message`. AI-assisted question and reply generation is provided by Groq.
 
 ## Base URL
 
 ```text
 http://localhost:5000
 ```
+
+## AI configuration
+
+Set `GROQ_API_KEY` in `middleware/.env` to enable AI-generated interview questions and message replies. AI endpoints fail with `500 Internal Server Error` if Groq is unavailable or generation fails.
 
 ## `POST /api/auth/signup`
 
@@ -68,14 +72,29 @@ JSON without a document:
 
 For a document, send `multipart/form-data` with a text field named `title` and an optional file field named `document`. The upload limit is 10 MB. The file is uploaded to the Supabase Storage bucket named `documents`, and its text is extracted for the history record.
 
+When extracted PDF text is available, the middleware asks Groq to generate exactly 10 interview questions based on the document. The generated questions are also saved as a bot message for the new history.
+
 ### Successful response: `201 Created`
 
-The response contains `message` and the saved `history` document. History fields include `user_id`, `history_id`, `title`, `pdf`, `document_text`, `created_at`, and `updated_at`.
+The response contains the saved `history` document and `newMessage`. With a PDF, `newMessage` is a JSON-serialized array of question objects, and those questions are saved in the message collection with `content_type: "json"` and `role: "bot"`. Without a PDF, `newMessage` is an empty string.
+
+Example question item:
+
+```json
+{
+  "question_number": 1,
+  "question": "How did you apply this skill in your recent project?",
+  "category": "Technical",
+  "difficulty": "Easy"
+}
+```
+
+History fields include `user_id`, `history_id`, `title`, `pdf`, `document_text`, `created_at`, and `updated_at`.
 
 ### Possible errors
 
 - `401 Unauthorized` when the authorization token is missing or the user cannot be authenticated.
-- `500 Internal Server Error` when token verification, database access, file upload, PDF parsing, or saving fails.
+- `500 Internal Server Error` when token verification, database access, file upload, PDF parsing, Groq question generation, or saving fails. The history record may already have been saved if question generation fails.
 
 ## `GET /api/history/get`
 
@@ -104,7 +123,7 @@ The array contains saved history documents and is empty when the user has no his
 
 ## `POST /api/message/send`
 
-Saves a new message for the authenticated user inside a specific history thread.
+Saves a submitted message and a generated AI reply in the message collection for the supplied history thread. The AI reply is generated from the submitted `content`.
 
 ### Headers
 
@@ -123,31 +142,43 @@ Content-Type: application/json
 }
 ```
 
+The request's `role` is stored as supplied. Use `"user"` for messages submitted by the user.
+
 ### Successful response: `201 Created`
 
 ```json
 {
-  "message": "Message added successfully.",
-  "data": {
+  "message": {
     "_id": "...",
-    "user_id": "...",
+    "message_id": "...",
     "content": "Hello, can you help me review this resume?",
     "content_type": "text",
     "history_id": "history-123",
     "role": "user",
     "created_at": "2026-10-09T00:00:00.000Z"
+  },
+  "botResponse": {
+    "_id": "...",
+    "message_id": "...",
+    "content": "Generated AI response...",
+    "content_type": "text",
+    "history_id": "history-123",
+    "role": "bot",
+    "created_at": "2026-10-09T00:00:00.000Z"
   }
 }
 ```
 
+The `message` property is the saved user message document; it is not a status string. Both documents are saved in MongoDB before the response is returned.
+
 ### Possible errors
 
 - `401 Unauthorized` when the authorization token is missing or invalid.
-- `500 Internal Server Error` when the database save fails.
+- `500 Internal Server Error` when token verification, message saving, or Groq reply generation fails. The submitted message may already be saved if reply generation fails.
 
 ## `POST /api/message/get`
 
-Returns all saved messages for the authenticated user within a particular `history_id`, sorted newest first by `created_at`.
+Returns saved messages matching the supplied `history_id`, sorted newest first by `created_at`.
 
 ### Headers
 
@@ -171,9 +202,10 @@ Content-Type: application/json
   "messages": [
     {
       "_id": "...",
-      "user_id": "...",
+      "message_id": "...",
       "history_id": "history-123",
       "content": "Hello, can you help me review this resume?",
+      "content_type": "text",
       "role": "user",
       "created_at": "2026-10-09T00:00:00.000Z"
     }
@@ -258,9 +290,11 @@ Users table structure:
 ## Current Limitations
 
 - **Logout is not exposed**: A placeholder logout controller exists but is not mounted in `authRoutes.js`; tokens are not invalidated on logout.
-- **History IDs are not unique yet**: `newHistory` currently assigns the constant value `1` to every `history_id`.
-- **Message IDs are not assigned in the current add flow**: the Mongoose schema includes `message_id`, but the controller currently saves a document without setting it.
+- **IDs are timestamp-based**: History and message IDs use timestamps and are not guaranteed unique.
 - **Invalid-token responses use status 500**: History and message controllers catch authentication errors as generic internal errors.
+- **History ownership is not checked for message operations**: Message documents do not store a user ID, and send/get filter by `history_id` without checking whether the history belongs to the authenticated user.
+- **AI calls can fail after persistence**: History is saved before initial question generation, and the submitted message is saved before reply generation. A Groq error can therefore produce a `500` while leaving saved data.
+- **Groq configuration is required for AI features**: Set `GROQ_API_KEY` in `middleware/.env`. Without a working key, PDF question generation and message sending cannot complete.
 - **Permissive CORS**: CORS is enabled for all origins; restrict it before production deployment.
 - **User rows are returned**: Signup and login return database user rows. Avoid adding secrets or plaintext credentials to that table.
 - **External services required**: History and messaging operations require PostgreSQL and MongoDB. PDF upload and extraction also require configured Supabase Storage.
@@ -271,4 +305,4 @@ Start the middleware with `npm run dev` from the `middleware` directory. First c
 
 For `POST http://localhost:5000/api/history/new`, set **Auth** to **Bearer** and paste the token. Send JSON with a `title` to create a history without a file. To attach a file, use **Body → Form**, add `title` as Text and `document` as File. For `GET http://localhost:5000/api/history/get`, use the same **Auth** setup and no body.
 
-For messaging, use `POST http://localhost:5000/api/message/send` with the same **Auth** header and JSON like `{ "content": "Hello", "history_id": "history-123", "role": "user" }`. Use `POST http://localhost:5000/api/message/get` with `{ "history_id": "history-123" }` to fetch the messages for that thread. Bearer token.
+For messaging, use `POST http://localhost:5000/api/message/send` with the same **Auth** header and JSON like `{ "content": "Hello", "history_id": "history-123", "role": "user" }`. The response contains the saved user message and the generated `botResponse`. Use `POST http://localhost:5000/api/message/get` with `{ "history_id": "history-123" }` to fetch the messages for that thread. Bearer token.
