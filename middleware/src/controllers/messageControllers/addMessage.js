@@ -39,6 +39,19 @@ export const addMessage = async (req, res) => {
         // Save the new message to the database
         const savedMessage = await newMessage.save();
 
+        //bot response generate
+        const botResponse = new message({
+            message_id: (new Date().getTime() + 1).toString(),  
+            content: "This is a bot response.", // Placeholder for bot response
+            content_type: "text",
+            history_id: history_id,
+            role : "bot",
+            created_at: new Date()
+        });
+
+        //bot response save
+        const savedBotResponse = await botResponse.save();
+
         res.status(201).json({ message: "Message added successfully.", data: savedMessage });
     }
     catch (error) {
