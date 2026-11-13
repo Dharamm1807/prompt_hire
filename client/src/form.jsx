@@ -3,6 +3,7 @@
 
 import {useState} from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "./api.js";
 
 function Form() {
 
@@ -18,7 +19,7 @@ function Form() {
         e.preventDefault();
 
         // Send the form data to the backend for processing
-        fetch("http://localhost:3000/api/auth/signup", {
+        fetch(`${API_URL}/api/auth/signup`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -34,8 +35,11 @@ function Form() {
         })
         .then((data) => {
             console.log("Success:", data);
-            // Redirect to the login page after successful signup
-            navigate("/login");
+            // Signup returns the token inside data.user, so the user is logged in right away
+            localStorage.setItem("token", data.user.token);
+            localStorage.setItem("username", data.user.username);
+            localStorage.setItem("email", data.user.email);
+            navigate("/dashboard");
         })
         .catch((error) => {
             console.error("Error:", error);

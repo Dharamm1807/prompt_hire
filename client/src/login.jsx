@@ -1,6 +1,7 @@
 //making login page
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "./api.js";
 
 function Login() {
     const [email, setEmail] = useState("");
@@ -12,7 +13,7 @@ function Login() {
         e.preventDefault();
 
         // Send the login data to the backend for processing
-        fetch("http://localhost:3000/api/auth/login", {
+        fetch(`${API_URL}/api/auth/login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -89,4 +90,4 @@ function Login() {
     );
 }
 
-export default Login;   
+export default Login;
