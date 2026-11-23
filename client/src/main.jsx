@@ -9,17 +9,27 @@ import Home from "./home.jsx";
 import Dashboard from "./dashboard.jsx";
 import UserProfile from "./userprofile.jsx";
 
+function ProtectedRoute({ children }) {
+    const token = localStorage.getItem("token");
+    return token ? children : <Navigate to="/login" replace />;
+}
+
+function PublicOnlyRoute({ children }) {
+    const token = localStorage.getItem("token");
+    return token ? <Navigate to="/dashboard" replace /> : children;
+}
+
 createRoot(document.getElementById("app")).render(
     <StrictMode>
         <BrowserRouter>
             <Navbar />
             <Routes>
                 <Route path="/home" element={<Home />} />
-                <Route path="/signup" element={<Form />} />
-                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<PublicOnlyRoute><Form /></PublicOnlyRoute>} />
+                <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
                 <Route path="/" element={<Navigate to="/home" />} />   
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/userprofile" element={<UserProfile />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/userprofile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
             </Routes>
         </BrowserRouter>
     </StrictMode>

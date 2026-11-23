@@ -42,7 +42,7 @@ prompt_hire/
         │   │   └── initialResponse.js   # Generates interview questions from PDF text
         │   ├── authControllers/
         │   │   ├── loginController.js
-        │   │   ├── logoutController.js  # Placeholder; not routed
+        │   │   ├── logoutController.js  # Invalidates the stored JWT
         │   │   └── signupController.js
         │   ├── documentControllers/
         │   │   ├── readDoc.js           # Extracts PDF text
@@ -124,6 +124,7 @@ uvicorn retrieve_api:app --host 0.0.0.0 --port 8000
 
 - `POST /api/auth/signup` - Create an account.
 - `POST /api/auth/login` - Authenticate and receive a JWT.
+- `POST /api/auth/logout` - Invalidate the current JWT and clear its browser and database session values.
 - `POST /api/history/new` - Create a user history, optionally attach a PDF, and generate initial interview questions when PDF text is available.
 - `GET /api/history/get` - Fetch the authenticated user's history.
 - `POST /api/message/send` - Save a message and generate/save an AI reply.

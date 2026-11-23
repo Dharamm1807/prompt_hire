@@ -263,6 +263,31 @@ Authenticates a user by email and password, creates a new one-hour JWT, and stor
 - `401 Unauthorized` when the email does not exist or the password is incorrect.
 - `500 Internal Server Error` when the database or another server operation fails.
 
+## `POST /api/auth/logout`
+
+Invalidates the currently stored JWT by clearing the authenticated user's `token` database column.
+
+### Headers
+
+```text
+Authorization: Bearer <jwt>
+```
+
+### Successful response: `200 OK`
+
+```json
+{
+  "message": "Logout successful."
+}
+```
+
+The bearer token must be valid and must match the token currently stored for the user. The frontend should also remove `token`, `username`, and `email` from `localStorage`.
+
+### Possible errors
+
+- `401 Unauthorized` when the authorization token is missing, invalid, expired, or already invalidated.
+- `500 Internal Server Error` when database access fails.
+
 ## Token helpers
 
 The middleware includes internal token helpers; they are not HTTP routes:
@@ -329,7 +354,6 @@ Users table structure:
 ## Current Limitations
 
 - **RAG credentials require separate configuration**: `rag/.env` must define `QDRANT_URL` and `QDRANT_API_KEY`; do not commit real values.
-- **Logout is not exposed**: A placeholder logout controller exists but is not mounted in `authRoutes.js`; tokens are not invalidated on logout.
 - **IDs are timestamp-based**: History and message IDs use timestamps and are not guaranteed unique.
 - **Invalid-token responses use status 500**: History and message controllers catch authentication errors as generic internal errors.
 - **History ownership is not checked for message operations**: Message documents do not store a user ID, and send/get filter by `history_id` without checking whether the history belongs to the authenticated user.

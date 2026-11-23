@@ -6,6 +6,9 @@ This version adds a Qdrant-backed RAG pipeline for resume interview-question pre
 
 ### Changes in v1.4.0
 
+- Added `POST /api/auth/logout` to invalidate the stored JWT in PostgreSQL.
+- Updated protected token checks to require that the JWT also matches the user's current stored token.
+- Added a Logout control to the React navbar that calls the API and clears browser session values.
 - Added `rag/load.py` to create the `interview_kb_v1` Qdrant collection and upload 384-dimensional interview knowledge-base embeddings.
 - Added `rag/retrieve_api.py`, a FastAPI service exposing `GET /health` and `POST /retrieve`.
 - Added resume profile extraction and RAG context retrieval in `middleware/src/controllers/aiControllers/ragContext.js`.

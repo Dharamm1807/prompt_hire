@@ -26,6 +26,7 @@ Prompt Hire is a work-in-progress interview-preparation application. Users can c
 - Optional PDF resume upload (up to 10 MB) when creating a conversation.
 - PDF text extraction and generation of 10 interview questions based on the extracted content.
 - Persistent conversation history and messages.
+- Server-side logout that invalidates the current JWT.
 - AI-generated replies to submitted messages.
 - A profile page that displays locally stored account details and previews a selected image in the browser.
 
@@ -174,7 +175,6 @@ See [middleware/API.md](middleware/API.md) for request and response examples, st
 - Signup and login currently return database user rows. Because signup uses `RETURNING *` and login selects all columns, the response may include the password hash and stored token. Do not deploy this API with real users until responses are explicitly limited to safe fields.
 - Message operations verify that a token can be resolved to a user but do not confirm that the supplied `history_id` belongs to that user. Do not expose this API to untrusted users before adding ownership checks.
 - CORS currently accepts all origins. Restrict allowed origins for deployment.
-- The logout controller is not mounted as a route, so there is no server-side logout or token invalidation endpoint.
 - History and message IDs are generated from timestamps and are not guaranteed unique.
 - If Groq generation fails, the history or submitted message may already have been saved even though the request returns an error.
 - The profile image is only a local preview; it is not saved.

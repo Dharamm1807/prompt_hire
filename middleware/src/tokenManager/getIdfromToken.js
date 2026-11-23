@@ -18,8 +18,9 @@ export const getIdFromToken = async (token) => {
         }
 
         const user = await pool.query(
-            `SELECT * FROM public."Users" WHERE username = $1 AND email = $2`,
-            [username, email]
+            `SELECT * FROM public."Users"
+             WHERE username = $1 AND email = $2 AND token = $3`,
+            [username, email, token]
         );
 
         if (user.rows.length === 0) {
