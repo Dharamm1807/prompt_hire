@@ -1,6 +1,35 @@
 # Project Updates
 
-## v1.3.0 - Current Working Version
+## v1.4.0 - Current Working Version
+
+This version adds a Qdrant-backed RAG pipeline for resume interview-question preparation.
+
+### Changes in v1.4.0
+
+- Added `rag/load.py` to create the `interview_kb_v1` Qdrant collection and upload 384-dimensional interview knowledge-base embeddings.
+- Added `rag/retrieve_api.py`, a FastAPI service exposing `GET /health` and `POST /retrieve`.
+- Added resume profile extraction and RAG context retrieval in `middleware/src/controllers/aiControllers/ragContext.js`.
+- Added structured question generation in `initialResponse.js`, with 8 questions by default and a JSON schema for question metadata and interviewer signals.
+- Added HTML chat-response generation and sanitization in `generateResponse.js`.
+- Added `BAAI/bge-small-en-v1.5` embedding use for knowledge-base loading and retrieval.
+- Added `RAG_URL` support with a default of `http://localhost:8000` for best-effort context retrieval.
+- Updated API and directory documentation for the RAG pipeline and Python service.
+
+### RAG Pipeline
+
+1. `load.py` reads `rag/data/kb.json`, encodes entry text, and upserts stable UUID5 points into Qdrant.
+2. `retrieve_api.py` encodes a query from the candidate's extracted skills or family.
+3. The service retrieves family guidelines, competencies, framework, seniority ladder, skills, and question exemplars.
+4. `ragContext.js` sends resume text to Groq, extracts a structured candidate profile, and asks the retrieval service for matching context.
+5. `initialResponse.js` creates schema-validated, resume-specific interview questions and filters clearly prohibited topics.
+
+### Known limitations in v1.4.0
+
+- RAG retrieval is best-effort and returns an empty context on Groq profile-extraction or HTTP retrieval failure.
+- Both Groq and Qdrant require network access and valid credentials.
+- PDF text and generated question data are persisted even when a later AI step fails.
+
+## v1.3.0
 
 This version adds Groq-powered interview assistance to the existing history and messaging APIs. The middleware uses the `groq-sdk` package and requires `GROQ_API_KEY` for AI features.
 

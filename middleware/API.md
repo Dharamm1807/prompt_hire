@@ -1,8 +1,8 @@
 # Middleware API
 
-**Version 1.3.0** - Authentication, History, Messaging, and AI Interview Assistance API
+**Version 1.4.0** - Authentication, History, Messaging, Groq, and RAG Interview Assistance API
 
-The middleware is an Express server. By default it runs on port `5000`. Authentication routes use `/api/auth`, history routes use `/api/history`, and messaging routes use `/api/message`. AI-assisted question and reply generation is provided by Groq.
+The middleware is an Express server. By default it runs on port `5000`. Authentication routes use `/api/auth`, history routes use `/api/history`, and messaging routes use `/api/message`. AI-assisted question and reply generation is provided by Groq. Resume question generation can optionally receive context from the RAG API in `rag/retrieve_api.py`.
 
 ## Base URL
 
@@ -12,7 +12,9 @@ http://localhost:5000
 
 ## AI configuration
 
-Set `GROQ_API_KEY` in `middleware/.env` to enable AI-generated interview questions and message replies. AI endpoints fail with `500 Internal Server Error` if Groq is unavailable or generation fails.
+Set `GROQ_API_KEY` in `middleware/.env` to enable AI-generated interview questions and message replies.
+
+Set `RAG_URL` to the RAG FastAPI base URL if it is not running at the default `http://localhost:8000`. Context retrieval is best-effort: if profile extraction or RAG retrieval fails, the middleware continues with available resume text and general interview guidance.
 
 ## `POST /api/auth/signup`
 
@@ -72,7 +74,15 @@ JSON without a document:
 
 For a document, send `multipart/form-data` with a text field named `title` and an optional file field named `document`. The upload limit is 10 MB. The file is uploaded to the Supabase Storage bucket named `documents`, and its text is extracted for the history record.
 
-When extracted PDF text is available, the middleware asks Groq to generate exactly 10 interview questions based on the document. The generated questions are also saved as a bot message for the new history.
+When extracted PDF text is available, the middleware:
+
+1. Uploads the original PDF to Supabase Storage.
+2. Extracts text with `pdf-parse`.
+3. Attempts to build a resume profile and retrieve RAG context.
+4. Calls Groq to generate 8 structured interview questions by default.
+5. Saves the JSON-serialized questions as a bot message in MongoDB.
+
+`newHistory.js` passes the returned `{ profile, context }` object to `initialResponse(documentText, rag)`, so structured resume questions are generated with the retrieved knowledge base context when available.
 
 ### Successful response: `201 Created`
 
@@ -171,6 +181,8 @@ The request's `role` is stored as supplied. Use `"user"` for messages submitted 
 
 The `message` property is the saved user message document; it is not a status string. Both documents are saved in MongoDB before the response is returned.
 
+The bot document has `content_type: "html"` and its content is sanitized before it is stored. The generated HTML supports paragraphs, headings, lists, emphasis, links, code blocks, blockquotes, and tables.
+
 ### Possible errors
 
 - `401 Unauthorized` when the authorization token is missing or invalid.
@@ -261,6 +273,33 @@ The middleware includes internal token helpers; they are not HTTP routes:
 
 ## Current Implementation Details
 
+### RAG and Resume Question Pipeline
+
+**Resume context retrieval:**
+- `newHistory` authenticates the user and saves the history before AI question generation.
+- `ragContext.js` sends at most 12,000 resume characters to Groq for structured profile extraction.
+- The profile schema identifies a career family, role, seniority band, confidence, skills, achievements, and summary.
+- The profile is sent to `POST http://localhost:8000/retrieve`, or to the URL configured in `RAG_URL`.
+- RAG retrieval is limited to 15 seconds. Failures are logged and converted to an empty context rather than failing the history request.
+
+**RAG data pipeline:**
+- `rag/load.py` embeds `rag/data/kb.json` with `BAAI/bge-small-en-v1.5`.
+- The Qdrant collection is `interview_kb_v1`; vectors have 384 dimensions and cosine distance.
+- Entries are uploaded in batches of 100 with stable UUID5 IDs.
+- `rag/retrieve_api.py` exposes `GET /health` and `POST /retrieve`.
+
+**Question generation:**
+- `initialResponse.js` returns structured JSON with question, category, difficulty, tests, resume reference, strong signals, weak signals, and follow-ups.
+- Generation allows two JSON-schema attempts and applies a rule-based backstop for prohibited topics.
+- The response is JSON-serialized and saved as `content_type: "json"`.
+- Retrieved RAG context is passed to `initialResponse` for resume-specific question generation.
+
+**Chat response pipeline:**
+- `addMessage.js` saves the submitted user message before calling Groq.
+- `generateResponse.js` asks `openai/gpt-oss-120b` for an HTML fragment.
+- Markdown fences and disallowed HTML are removed using `sanitize-html`.
+- The sanitized bot reply is saved as `content_type: "html"`.
+
 ### Authentication Flow
 
 **Signup:**
@@ -289,6 +328,7 @@ Users table structure:
 
 ## Current Limitations
 
+- **RAG credentials require separate configuration**: `rag/.env` must define `QDRANT_URL` and `QDRANT_API_KEY`; do not commit real values.
 - **Logout is not exposed**: A placeholder logout controller exists but is not mounted in `authRoutes.js`; tokens are not invalidated on logout.
 - **IDs are timestamp-based**: History and message IDs use timestamps and are not guaranteed unique.
 - **Invalid-token responses use status 500**: History and message controllers catch authentication errors as generic internal errors.

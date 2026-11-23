@@ -44,11 +44,14 @@ function MessageBubble({ msg }) {
     const isUser = msg.role === "user";
     const questions =
         msg.content_type === "json" ? parseQuestions(msg.content) : null;
+    const isHtml = !isUser && msg.content_type === "html";
 
     return (
         <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
             <div
-                className={`max-w-[75%] rounded-lg px-4 py-2 whitespace-pre-wrap ${
+                className={`max-w-[75%] rounded-lg px-4 py-2 ${
+                    isHtml ? "" : "whitespace-pre-wrap"
+                } ${
                     isUser
                         ? "bg-[#0C67A0] text-white"
                         : "bg-white text-gray-800 border"
@@ -67,9 +70,39 @@ function MessageBubble({ msg }) {
                                         .filter(Boolean)
                                         .join(" • ")}
                                 </p>
+
+                                {(q.tests || q.follow_ups) && (
+                                    <details className="mt-1 text-sm whitespace-normal">
+                                        <summary className="cursor-pointer text-[#0C67A0]">
+                                            Details
+                                        </summary>
+                                        <div className="mt-1 space-y-1 text-gray-700">
+                                            {q.tests && (
+                                                <p><strong>Tests:</strong> {q.tests}</p>
+                                            )}
+                                            {q.resume_reference && (
+                                                <p><strong>Resume reference:</strong> {q.resume_reference}</p>
+                                            )}
+                                            {q.strong_signals?.length > 0 && (
+                                                <p><strong>Strong answer:</strong> {q.strong_signals.join("; ")}</p>
+                                            )}
+                                            {q.weak_signals?.length > 0 && (
+                                                <p><strong>Weak answer:</strong> {q.weak_signals.join("; ")}</p>
+                                            )}
+                                            {q.follow_ups?.length > 0 && (
+                                                <p><strong>Follow-ups:</strong> {q.follow_ups.join(" / ")}</p>
+                                            )}
+                                        </div>
+                                    </details>
+                                )}
                             </div>
                         ))}
                     </div>
+                ) : isHtml ? (
+                    <div
+                        className="bot-html"
+                        dangerouslySetInnerHTML={{ __html: msg.content }}
+                    />
                 ) : (
                     stripContext(msg.content)
                 )}
