@@ -1,80 +1,64 @@
-import groq from '../../config/groq.js';
+import { chatJSON } from './groqJSON.js';
 
-const initialResponse = async (pdfData) => {
-    try {
-        const completion = await groq.chat.completions.create({
-            messages: [
-                {
-                    role: "system",
-                    content: `
-                    You are an expert technical interviewer.
+const BANDS = ["entry", "mid", "senior", "lead_manager"];
+const MAX_RESUME_CHARS = 12000;
 
-                    Your task is to analyze the provided PDF content
-                    and generate exactly 10 relevant interview questions.
-
-                    Instructions:
-                    1. Analyze the skills, experience, projects,
-                       education and technical knowledge in the PDF.
-                    2. Generate questions relevant to the candidate's
-                       background.
-                    3. Include a mixture of technical, conceptual,
-                       practical and project-based questions.
-                    4. Gradually increase the difficulty.
-                    5. Avoid duplicate or generic questions.
-                    6. Questions must be clear and concise.
-
-                    Return ONLY valid JSON in this format:
-
-                    {
-                        "questions": [
-                            {
-                                "question_number": 1,
-                                "question": "Question text",
-                                "category": "Technical",
-                                "difficulty": "Easy"
-                            }
-                        ]
-                    }
-
-                    Generate exactly 10 questions.
-                    Do not include markdown or additional text.
-                    `
-                },
-                {
-                    role: "user",
-                    content: `Analyze this extracted PDF data and generate
-                    10 interview questions:\n\n${pdfData}`
-                }
-            ],
-            model: "openai/gpt-oss-120b",
-            temperature: 0.7,
-            max_completion_tokens: 2048,
-            top_p: 1,
-            stream: false,
-            reasoning_effort: "medium"
-        });
-
-        const response = completion.choices[0]?.message?.content;
-
-        if (!response) {
-            throw new Error("Empty response received from Groq.");
+const questionsSchema = {
+  type: "object", additionalProperties: false, required: ["questions"],
+  properties: {
+    questions: {
+      type: "array",
+      items: {
+        type: "object", additionalProperties: false,
+        required: ["question", "category", "difficulty", "tests", "resume_reference",
+                   "strong_signals", "weak_signals", "follow_ups"],
+        properties: {
+          question: { type: "string" },
+          category: { type: "string", enum: ["technical", "behavioral", "situational"] },
+          difficulty: { type: "string", enum: BANDS },
+          tests: { type: "string" },
+          resume_reference: { type: "string" },
+          strong_signals: { type: "array", items: { type: "string" } },
+          weak_signals: { type: "array", items: { type: "string" } },
+          follow_ups: { type: "array", items: { type: "string" } }
         }
-
-        const parsedResponse = JSON.parse(response);
-
-        if (
-            !Array.isArray(parsedResponse.questions) ||
-            parsedResponse.questions.length !== 10
-        ) {
-            throw new Error("LLM did not generate exactly 10 questions.");
-        }
-
-        return parsedResponse.questions;
-
-    } catch (error) {
-        console.error("Initial question generation error:", error);
-        throw error;
+      }
     }
+  }
+};
+
+// cheap rule-based backstop for prohibited topics
+const BLOCKED = /\b(how old|your age|married|marital|pregnan|have children|religio|church|ethnic|nationality|citizen|disabilit|sexual orientation|political|arrest|salary history)\b/i;
+const safe = (q) => !BLOCKED.test(q.question);
+
+export const initialResponse = async (documentText, rag = {}, count = 8) => {
+  const resume = String(documentText || "").slice(0, MAX_RESUME_CHARS);
+  const { profile = null, context = null } = rag || {};
+
+  const hasContext = context && (context.framework?.length || context.exemplars?.length);
+  const kbBlock = hasContext
+    ? JSON.stringify(context)
+    : "No knowledge base context available. Rely on the candidate's resume and general good interviewing practice.";
+
+  const result = await chatJSON({
+    system: `You generate interview questions for an interviewer to ask one specific candidate.
+Rules:
+- Every question must reference a specific item from the candidate's resume or profile (put it in resume_reference).
+- Probe the candidate's personal contribution and how any claimed metric was measured.
+- Follow the guidelines in the context and NEVER touch any prohibited topic.
+- Match difficulty to the candidate's seniority band and the family framework.
+- Example questions in the context are style and calibration references only. Never copy them.
+- Mix technical, behavioral and situational questions.
+- Every question needs strong signals, weak signals and follow-ups specific to that question.`,
+    user: `CANDIDATE PROFILE:\n${profile ? JSON.stringify(profile) : "not available"}\n\n` +
+          `RESUME:\n${resume}\n\n` +
+          `KNOWLEDGE BASE CONTEXT:\n${kbBlock}\n\n` +
+          `Generate ${count} questions.`,
+    schemaName: "questions", schema: questionsSchema,
+    effort: "medium", temperature: 0.6, maxTokens: 8000
+  });
+
+  return (result.questions || []).filter(safe);
 };
 
 export default initialResponse;

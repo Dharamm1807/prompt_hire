@@ -32,6 +32,7 @@ function Login() {
             localStorage.setItem("token", data.token); // This will save the token in local storage for later use (like accessing protected routes)
             localStorage.setItem("username", data.user.username);
             localStorage.setItem("email", data.user.email);
+            window.dispatchEvent(new Event("auth-changed"));
             // Redirect to the dashboard page after successful login
             navigate("/dashboard");
         })

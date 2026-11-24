@@ -39,6 +39,7 @@ function Form() {
             localStorage.setItem("token", data.user.token);
             localStorage.setItem("username", data.user.username);
             localStorage.setItem("email", data.user.email);
+            window.dispatchEvent(new Event("auth-changed"));
             navigate("/dashboard");
         })
         .catch((error) => {

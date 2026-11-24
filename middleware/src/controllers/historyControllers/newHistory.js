@@ -10,6 +10,7 @@ import { uploadDoc } from "../documentControllers/uploadDoc.js";
 import { readDoc } from "../documentControllers/readDoc.js";
 import initialResponse from "../aiControllers/initialResponse.js";
 import message from "../../models/messageModels.js";
+import { getContext } from '../aiControllers/ragContext.js';
 
 export const newHistory = async (req, res) => {
     try {
@@ -83,8 +84,11 @@ export const newHistory = async (req, res) => {
 
         let content = "";
         if(documentText) {
+            // get context from ai backend
+            const rag = await getContext(documentText);
+        
             // Generate initial questions using LLM
-            const questions = await initialResponse(documentText);
+            const questions = await initialResponse(documentText, rag);
             content = JSON.stringify(questions);
 
             //save questions to message collection

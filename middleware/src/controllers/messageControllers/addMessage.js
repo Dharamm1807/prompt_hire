@@ -47,7 +47,7 @@ export const addMessage = async (req, res) => {
             message_id: (new Date().getTime() + 1).toString(),  
             content: botResponseContent, // Use the generated bot response
 
-            content_type: "text",
+            content_type: "html",
             history_id: history_id,
             role : "bot",
             created_at: new Date()

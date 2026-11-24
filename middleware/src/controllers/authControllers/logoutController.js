@@ -1,18 +1,36 @@
-/*
-DOESNT WORK RIGHT NOW IGNORE THIS FILE FOR NOW
-*/
+import pool from "../../config/auth_db.js";
+import { getIdFromToken } from "../../tokenManager/getIdfromToken.js";
 
-async function logout(req, res) {
+export const logout = async (req, res) => {
     try {
-        // Perform any necessary cleanup, such as invalidating tokens or clearing session data
-        // For example, if you're using JWT, you might want to blacklist the token
-        // If you're using sessions, you can destroy the session
-        // Here, we'll just send a success response
-        res.status(200).json({ message: "Logout successful." });
-    }
-    catch (error) { 
+        const token = req.headers.authorization?.split(" ")[1];
 
+        if (!token) {
+            return res.status(401).json({ message: "Authorization token is missing." });
+        }
+
+        const user = await getIdFromToken(token);
+        const userId = user.rows[0]?.user_id;
+
+        if (!userId) {
+            return res.status(401).json({ message: "User not authenticated." });
+        }
+
+        await pool.query(
+            `UPDATE public."Users" SET token = NULL WHERE user_id = $1`,
+            [userId]
+        );
+
+        return res.status(200).json({ message: "Logout successful." });
+    } catch (error) {
         console.error("Error occurred while logging out:", error);
-        res.status(500).json({ message: "Internal server error." });
-    }  
-}
+
+        if (error.message === "Invalid token") {
+            return res.status(401).json({ message: "Invalid or expired token." });
+        }
+
+        return res.status(500).json({ message: "Internal server error." });
+    }
+};
+
+export default logout;
